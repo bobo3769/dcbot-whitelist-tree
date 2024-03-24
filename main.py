@@ -28,10 +28,10 @@ except FileNotFoundError:
 except json.decoder.JSONDecodeError:
     print('file empty')
 
-mcwhitelist = {}
+mcwhitelist = []
 try:
     with open("whitelist.json", "r") as f:
-        wlsttree = json.load(f)
+        mcwhitelist = json.load(f)
 except FileNotFoundError:
     print('mc whitelist file not fond')
     pass
