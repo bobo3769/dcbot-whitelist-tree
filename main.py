@@ -297,4 +297,13 @@ async def dismiss_user(interaction: discord.Interaction, target: discord.User):
         view = dissmissButtonView(author_name, author_id,target_name, target_id)
         await interaction.response.send_message(f'請小心，這個操作會將<@{target_id}>及他收編的對象移出白名單，確定要這麼做嗎?',view=view,ephemeral=True)
 
+@slash_cmd.command(name= "rcon指令", description= "使用rcon指令")
+@commands.is_owner()
+async def registermcid(interaction: discord.Interaction, cmd:str):
+    if owner == interaction.user:
+        resp = mc_server_rcon(cmd)
+        await interaction.response.send_message(f'執行`{cmd}`回應為`{resp}`',ephemeral=True)
+    else:
+        await interaction.response.send_message(f'您沒有權限使用這個指令',ephemeral=True)
+
 bot.run(CONFIG['Discord_Bot_Token'])
