@@ -52,13 +52,14 @@ def check_user_data(dcid):
 #嘗試增加身分組
 async def try_addrole(dcid):
     try:
-        guild_id = 1220041084692987914
+        guild_id = int(CONFIG['guild_id'])
         guild = bot.get_guild(guild_id)
+        role_id = int(CONFIG['whitelist_role_id'])
         if guild is None:
             print(f'增加身分組guild not found.')
             return
         usr = await bot.fetch_user(dcid)
-        role = discord.utils.get(guild.roles, id=1220041372749402242)
+        role = discord.utils.get(guild.roles, id=role_id)
         if usr is None:
             print(f'增加身分組user not found.')
             return
@@ -81,13 +82,14 @@ async def try_addrole(dcid):
 #嘗試移除身分組
 async def try_rmrole(dcid):
     try:
-        guild_id = 1220041084692987914
+        guild_id = int(CONFIG['guild_id'])
         guild = bot.get_guild(guild_id)
+        role_id = int(CONFIG['whitelist_role_id'])
         if guild is None:
             print(f'移除身分組guild not found.')
             return
         usr = await bot.fetch_user(dcid)
-        role = discord.utils.get(guild.roles, id=1220041372749402242)
+        role = discord.utils.get(guild.roles, id=role_id)
         if usr is None:
             print(f'移除身分組user not found.')
             return
