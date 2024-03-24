@@ -4,6 +4,7 @@ from discord.ext import commands
 from discord.ui import Button, View
 import json
 import requests
+from mcrcon import MCRcon
 
 print("import完成")
 
@@ -13,7 +14,7 @@ try:
         CONFIG = json.load(f)
 except FileNotFoundError:
     with open("Config.json", "w") as f:
-        json.dump({'Discord_Bot_Token': 'YOURTOKEN', 'Prefix': 'tree.', 'guild_id': '', 'whitelist_role_id': ''}, f, indent=4)
+        json.dump({'Discord_Bot_Token': 'YOURTOKEN', 'Prefix': 'tree.', 'guild_id': '', 'whitelist_role_id': '', 'mc_ip': '127.0.0.1', 'rcon.port': 25575, 'rcon.password': ''}, f, indent=4)
     raise Exception("找不到Config.json... 我把它放到資料夾裡了，請去設定它的內容! (第一次執行會這樣很正常)")
 except json.decoder.JSONDecodeError:
     print('file empty')
@@ -130,22 +131,33 @@ async def chain_rm(target,reason,interaction: discord.Interaction):
         newreason = f'{reason}連帶{tgtchildname}'
         print(f'{newreason}解編')
         try_rmrole(tgtchild)
-        try_rmwhitelist(tgtchild)
+        await try_rmwhitelist(tgtchild)
         await interaction.message.channel.send(f'<@{tgtchild}>已被解編，{newreason}')
         await chain_rm(tgtchild,newreason,interaction)
     wlsttree[target]['child'] = []
     pass
 
+#用RCON跟minecraft溝通
+rcon_ip:str = CONFIG['mc_ip']
+rcon_port:int = CONFIG['rcon.port']
+rcon_pwd:str = CONFIG['rcon.password']
+def mc_server_rcon(cmd):
+    try:
+        with MCRcon(rcon_ip, rcon_pwd, rcon_port) as mcr:
+            resp = mcr.command(cmd)
+            return resp
+    except:
+        resp = 'rcon失敗'
+        print(resp)
+        return resp
+
 #嘗試加入白名單
 async def try_addwhitelist(dcid):
-    print(dcid)
     try:
         usr = await bot.fetch_user(dcid)
         if wlsttree[dcid]['in_whitelist'] == 1 and wlsttree[dcid]['mcid'] != None and wlsttree[dcid]['uuid'] != None:
-            uuid, mcid = str(wlsttree[dcid]['uuid']), str(wlsttree[dcid]['mcid'])
-            mcdata = {"uuid": uuid,"name": mcid}
-            mcwhitelist.append(mcdata)
-            save_mcwhitelist()
+            mcid = str(wlsttree[dcid]['mcid'])
+            mc_server_rcon(f'/whitelist add {mcid}')
             try:
                 await usr.send(f'已將Minecraft帳號`{mcid}`加入白名單')
             except:
@@ -154,10 +166,19 @@ async def try_addwhitelist(dcid):
         print(f'將{dcid}加入白名單失敗')
 
 #嘗試移除白名單
-def try_rmwhitelist(mcid):
-    print(f'嘗試移除{mcid}白名單')
-
-       
+async def try_rmwhitelist(dcid):
+    try:
+        usr = await bot.fetch_user(dcid)
+        print('移出白名單')
+        if wlsttree[dcid]['mcid'] != None:
+            mcid = str(wlsttree[dcid]['mcid'])
+            mc_server_rcon(f'/whitelist remove {mcid}')
+            try:
+                await usr.send(f'已將Minecraft帳號`{mcid}`移出白名單')
+            except:
+                print(f'can not dm {usr}@{dcid}')
+    except:
+        print(f'將{dcid}移出白名單失敗')
 
 print("設定")
 bot = commands.Bot(command_prefix=CONFIG['Prefix'], intents=discord.Intents.default())
@@ -197,8 +218,8 @@ async def check_mcid(mcid, usr):
         else:
             usr = str(usr)
             check_user_data(usr)
-            if wlsttree[usr]['mcid'] != "":
-                try_rmwhitelist(wlsttree[usr]['mcid'])
+            if wlsttree[usr]['mcid']:
+                await try_rmwhitelist(usr)
             wlsttree[usr]['mcid'] = search_mcid
             wlsttree[usr]['uuid'] = uuid
             print(wlsttree)
@@ -253,7 +274,7 @@ class dissmissButtonView(discord.ui.View):
         wlsttree[self.target_id]['in_whitelist'] = 0
         print(wlsttree)
         await try_rmrole(self.target_id)
-        try_rmwhitelist(self.target_id)
+        await try_rmwhitelist(self.target_id)
         await interaction.message.channel.send(f'<@{self.author_id}>已將<@{self.target_id}>解編')
         reason = f'因{self.author_name}解編{self.target_name}'
         await chain_rm(self.target_id,reason,interaction)
