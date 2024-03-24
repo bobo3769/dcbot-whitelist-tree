@@ -137,8 +137,21 @@ async def chain_rm(target,reason,interaction: discord.Interaction):
     pass
 
 #嘗試加入白名單
-def try_addwhitelist(dcid):
-    print(f'嘗試加入{dcid}白名單')
+async def try_addwhitelist(dcid):
+    print(dcid)
+    try:
+        usr = await bot.fetch_user(dcid)
+        if wlsttree[dcid]['in_whitelist'] == 1 and wlsttree[dcid]['mcid'] != None and wlsttree[dcid]['uuid'] != None:
+            uuid, mcid = str(wlsttree[dcid]['uuid']), str(wlsttree[dcid]['mcid'])
+            mcdata = {"uuid": uuid,"name": mcid}
+            mcwhitelist.append(mcdata)
+            save_mcwhitelist()
+            try:
+                await usr.send(f'已將Minecraft帳號`{mcid}`加入白名單')
+            except:
+                print(f'can not dm {usr}@{dcid}')
+    except:
+        print(f'將{dcid}加入白名單失敗')
 
 #嘗試移除白名單
 def try_rmwhitelist(mcid):
@@ -171,7 +184,7 @@ async def on_ready():
 
 #註冊
 #檢查mcid
-def check_mcid(mcid, usr):
+async def check_mcid(mcid, usr):
     response = requests.get(f"https://api.mojang.com/users/profiles/minecraft/{mcid}")
     if response.status_code == 200:
         uuid = response.json()['id']
@@ -190,7 +203,7 @@ def check_mcid(mcid, usr):
             wlsttree[usr]['uuid'] = uuid
             print(wlsttree)
             save_tree()
-            try_addwhitelist(usr)
+            await try_addwhitelist(usr)
             return f'成功將<@{usr}>的minecraftID註冊為{search_mcid}',False
     elif response.status_code == 404:
         return '請輸入正確ID', True
@@ -198,7 +211,7 @@ def check_mcid(mcid, usr):
         return '似乎出現了什麼問題', False
 @bot.tree.command(name="註冊" ,description="登記您的minecraft供白名單使用")
 async def registermcid(interaction: discord.Interaction, mcid:str):
-    msg,msghide = check_mcid(mcid, interaction.user.id)
+    msg,msghide = await check_mcid(mcid, interaction.user.id)
     await interaction.response.send_message(f'{msg}',ephemeral=msghide)
 
 #收編
@@ -220,7 +233,7 @@ async def hire_user(interaction: discord.Interaction, target: discord.User):
             wlsttree[target_id]['in_whitelist'] = 1
             save_tree()
             await try_addrole(target_id)
-            try_addwhitelist(target_id)
+            await try_addwhitelist(target_id)
             await interaction.response.send_message(f'<@{author_id}>已成功收編<@{target_id}>')
 
 
