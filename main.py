@@ -142,6 +142,9 @@ rcon_ip:str = CONFIG['mc_ip']
 rcon_port:int = CONFIG['rcon.port']
 rcon_pwd:str = CONFIG['rcon.password']
 def mc_server_rcon(cmd):
+    resp = '現在沒有開著伺服器'
+    return resp
+    #要開著伺服器才能用rcon以免對discord回應逾時，這邊之後處理
     try:
         with MCRcon(rcon_ip, rcon_pwd, rcon_port) as mcr:
             resp = mcr.command(cmd)
