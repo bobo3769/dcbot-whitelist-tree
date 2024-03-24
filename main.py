@@ -43,6 +43,10 @@ def save_tree():
     with open("treedata.json", 'w') as file:
         json.dump(wlsttree, file, indent=4)
 
+def save_mcwhitelist():
+    with open("whitelist.json", 'w') as file:
+        json.dump(mcwhitelist, file, indent=2)
+
 #檢查樹上存在用戶
 def check_user_data(dcid):
     dcid = str(dcid)
