@@ -309,4 +309,32 @@ async def registermcid(interaction: discord.Interaction, cmd:str):
     else:
         await interaction.response.send_message(f'您沒有權限使用這個指令',ephemeral=True)
 
+@slash_cmd.command(name= "直接白單", description= "直接設為白單，請小心使用")
+@commands.is_owner()
+async def direct_whitelist(interaction: discord.Interaction, target: discord.User):
+    if owner == interaction.user:
+        tgt_id = str(target.id)
+        check_user_data(tgt_id)
+        wlsttree[tgt_id]['in_whitelist'] = 1
+        save_tree()
+        await try_addrole(target_id)
+        await try_addwhitelist(target_id)
+        await interaction.response.send_message(f'直接將{target}設為白名單',ephemeral=True)
+    else:
+        await interaction.response.send_message(f'您沒有權限使用這個指令',ephemeral=True)
+
+@slash_cmd.command(name= "直接取消白單", description= "直接取消白單，請小心使用")
+@commands.is_owner()
+async def direct_whitelist(interaction: discord.Interaction, target: discord.User):
+    if owner == interaction.user:
+        tgt_id = str(target.id)
+        check_user_data(tgt_id)
+        wlsttree[tgt_id]['in_whitelist'] = 0
+        save_tree()
+        await try_rmrole(target_id)
+        await try_rmwhitelist(target_id)
+        await interaction.response.send_message(f'直接將{target}取消白名單',ephemeral=True)
+    else:
+        await interaction.response.send_message(f'您沒有權限使用這個指令',ephemeral=True)
+
 bot.run(CONFIG['Discord_Bot_Token'])
