@@ -317,8 +317,8 @@ async def direct_whitelist(interaction: discord.Interaction, target: discord.Use
         check_user_data(tgt_id)
         wlsttree[tgt_id]['in_whitelist'] = 1
         save_tree()
-        await try_addrole(target_id)
-        await try_addwhitelist(target_id)
+        await try_addrole(tgt_id)
+        await try_addwhitelist(tgt_id)
         await interaction.response.send_message(f'直接將{target}設為白名單',ephemeral=True)
     else:
         await interaction.response.send_message(f'您沒有權限使用這個指令',ephemeral=True)
@@ -331,8 +331,8 @@ async def direct_whitelist(interaction: discord.Interaction, target: discord.Use
         check_user_data(tgt_id)
         wlsttree[tgt_id]['in_whitelist'] = 0
         save_tree()
-        await try_rmrole(target_id)
-        await try_rmwhitelist(target_id)
+        await try_rmrole(tgt_id)
+        await try_rmwhitelist(tgt_id)
         await interaction.response.send_message(f'直接將{target}取消白名單',ephemeral=True)
     else:
         await interaction.response.send_message(f'您沒有權限使用這個指令',ephemeral=True)
