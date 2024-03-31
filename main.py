@@ -142,17 +142,18 @@ rcon_ip:str = CONFIG['mc_ip']
 rcon_port:int = CONFIG['rcon.port']
 rcon_pwd:str = CONFIG['rcon.password']
 def mc_server_rcon(cmd):
-    resp = '現在沒有開著伺服器'
-    return resp
-    #要開著伺服器才能用rcon以免對discord回應逾時，這邊之後處理
-    try:
-        with MCRcon(rcon_ip, rcon_pwd, rcon_port) as mcr:
-            resp = mcr.command(cmd)
+    if rcon_ip:
+        resp = "rcon,啟動!"
+        try:
+            with MCRcon(rcon_ip, rcon_pwd, rcon_port) as mcr:
+                resp = mcr.command(cmd)
+                return resp
+        except:
+            resp = "rcon失敗"
+            print(resp)
             return resp
-    except:
-        resp = 'rcon失敗'
-        print(resp)
-        return resp
+    else:
+        return "未填入minecraft server ip 位於Comfig.json檔案中的mc_ip欄位"
 
 #嘗試加入白名單
 async def try_addwhitelist(dcid):
@@ -172,7 +173,6 @@ async def try_addwhitelist(dcid):
 async def try_rmwhitelist(dcid):
     try:
         usr = await bot.fetch_user(dcid)
-        print('移出白名單')
         if wlsttree[dcid]['mcid'] != None:
             mcid = str(wlsttree[dcid]['mcid'])
             mc_server_rcon(f'/whitelist remove {mcid}')
@@ -207,9 +207,10 @@ async def on_ready():
 ###slash指令###
 
 #註冊
-#檢查mcid
-async def check_mcid(mcid, usr):
-    response = requests.get(f"https://api.mojang.com/users/profiles/minecraft/{mcid}")
+@bot.tree.command(name="註冊" ,description="登記您的minecraft供白名單使用")
+async def registermcid(interaction: discord.Interaction, mcid:str):
+    usr = interaction.user.id
+    response = requests.get(f"https://api.mojang.com/users/profiles/minecraft/{mcid}") #檢查mcid
     if response.status_code == 200:
         uuid = response.json()['id']
         #尋找樹資料
@@ -217,26 +218,23 @@ async def check_mcid(mcid, usr):
         for dcid, data in wlsttree.items():
             if data.get('mcid') == search_mcid:
                 found_dcid = dcid
-                return f'已被<@{found_dcid}>使用', True
+                await interaction.response.send_message(f'已被<@{found_dcid}>使用',ephemeral=True)
+                return()
         else:
+            await interaction.response.send_message(f'成功將<@{usr}>的minecraftID註冊為{search_mcid}',ephemeral=False)
             usr = str(usr)
             check_user_data(usr)
-            if wlsttree[usr]['mcid']:
+            if wlsttree[usr]['mcid']: #若有舊id則移除白單
                 await try_rmwhitelist(usr)
             wlsttree[usr]['mcid'] = search_mcid
             wlsttree[usr]['uuid'] = uuid
             print(wlsttree)
             save_tree()
             await try_addwhitelist(usr)
-            return f'成功將<@{usr}>的minecraftID註冊為{search_mcid}',False
     elif response.status_code == 404:
-        return '請輸入正確ID', True
+        await interaction.response.send_message(f'請輸入正確ID',ephemeral=True)
     else:
-        return '似乎出現了什麼問題', False
-@bot.tree.command(name="註冊" ,description="登記您的minecraft供白名單使用")
-async def registermcid(interaction: discord.Interaction, mcid:str):
-    msg,msghide = await check_mcid(mcid, interaction.user.id)
-    await interaction.response.send_message(f'{msg}',ephemeral=msghide)
+        await interaction.response.send_message(f'似乎出現了什麼問題',ephemeral=False)
 
 #收編
 @slash_cmd.command(name = "收編",description= "將別人經由自己連接到白名單樹上")
@@ -256,9 +254,9 @@ async def hire_user(interaction: discord.Interaction, target: discord.User):
             wlsttree[target_id]['parent'] = author_id
             wlsttree[target_id]['in_whitelist'] = 1
             save_tree()
+            await interaction.response.send_message(f'<@{author_id}>已成功收編<@{target_id}>')
             await try_addrole(target_id)
             await try_addwhitelist(target_id)
-            await interaction.response.send_message(f'<@{author_id}>已成功收編<@{target_id}>')
 
 
 #解編
@@ -276,9 +274,9 @@ class dissmissButtonView(discord.ui.View):
         wlsttree[self.target_id]['parent'] = ''
         wlsttree[self.target_id]['in_whitelist'] = 0
         print(wlsttree)
+        await interaction.message.channel.send(f'<@{self.author_id}>已將<@{self.target_id}>解編')
         await try_rmrole(self.target_id)
         await try_rmwhitelist(self.target_id)
-        await interaction.message.channel.send(f'<@{self.author_id}>已將<@{self.target_id}>解編')
         reason = f'因{self.author_name}解編{self.target_name}'
         await chain_rm(self.target_id,reason,interaction)
         print(wlsttree)
@@ -317,9 +315,9 @@ async def direct_whitelist(interaction: discord.Interaction, target: discord.Use
         check_user_data(tgt_id)
         wlsttree[tgt_id]['in_whitelist'] = 1
         save_tree()
+        await interaction.response.send_message(f'直接將{target}設為白名單',ephemeral=True)
         await try_addrole(tgt_id)
         await try_addwhitelist(tgt_id)
-        await interaction.response.send_message(f'直接將{target}設為白名單',ephemeral=True)
     else:
         await interaction.response.send_message(f'您沒有權限使用這個指令',ephemeral=True)
 
@@ -331,9 +329,9 @@ async def direct_whitelist(interaction: discord.Interaction, target: discord.Use
         check_user_data(tgt_id)
         wlsttree[tgt_id]['in_whitelist'] = 0
         save_tree()
+        await interaction.response.send_message(f'直接將{target}取消白名單',ephemeral=True)
         await try_rmrole(tgt_id)
         await try_rmwhitelist(tgt_id)
-        await interaction.response.send_message(f'直接將{target}取消白名單',ephemeral=True)
     else:
         await interaction.response.send_message(f'您沒有權限使用這個指令',ephemeral=True)
 
