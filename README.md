@@ -12,6 +12,8 @@ Operation the whitelist use rcon to command your Minecraft Server.
 Administrators can use generate_mc_whitelist.py to convert the whitelist tree data into the whitelist data of the Minecraft server at one time
 
 
+
+
 這是個用python3製作的Discord Bot
 
 用於"自動"管理Minecraft伺服器的白名單
