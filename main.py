@@ -207,7 +207,7 @@ async def on_ready():
 ###slash指令###
 
 #註冊
-@bot.tree.command(name="註冊" ,description="登記您的minecraft供白名單使用")
+@slash_cmd.command(name="註冊" ,description="登記您的minecraft供白名單使用")
 async def registermcid(interaction: discord.Interaction, mcid:str):
     usr = interaction.user.id
     response = requests.get(f"https://api.mojang.com/users/profiles/minecraft/{mcid}") #檢查mcid
